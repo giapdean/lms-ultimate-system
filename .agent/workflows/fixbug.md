@@ -31,7 +31,7 @@ description: Quy trình Fix Bug và Xử lý Lỗi (Thay thế debug.md)
 
 ---
 
-## 2. TỔNG HỢP LỖI ĐÃ GẶP (Case Studies)
+## 2. TỔNG HỢP LỖI CODE/LOGIC (Case Studies)
 
 ### 🔴 Lỗi 1: Chart không hiện dữ liệu / Dữ liệu sai
 -   **Nguyên nhân:** Parse ngày tháng sai (`new Date`) trên Safari/Chrome cũ hoặc còn code `Math.random()` fake data.
@@ -116,3 +116,55 @@ description: Quy trình Fix Bug và Xử lý Lỗi (Thay thế debug.md)
     -   Vào Script Editor (`code.gs`).
     -   Tạo/Chạy hàm `forceAuth` (hàm này KHÔNG được có `try-catch` để ép GAS hiện lỗi cấp quyền).
     -   Bấm Run -> "Review Permissions" -> "Allow" khi hiện popup.
+
+---
+
+## 3. TỔNG HỢP LỖI DEPLOYMENT (Mới Cập Nhật)
+
+### 🔴 Lỗi 14: PowerShell Security Policy (UnauthorizedAccess)
+-   **Triệu chứng:** Chạy `npm`, `npx`, `vercel` bị báo đỏ loè: `...cannot be loaded because running scripts is disabled`.
+-   **Nguyên nhân:** PowerShell mạc địch chặn chạy script ngoài.
+-   **Giải pháp:**
+    -   Thêm `cmd /c` phía trước mọi câu lệnh.
+    -   Ví dụ: `cmd /c "npx vercel --prod"`
+
+### 🔴 Lỗi 15: Deploy nhầm thư mục User (Home Directory)
+-   **Triệu chứng:** Vercel hỏi `Set up and deploy "~"?` (Dấu ngã là thư mục user).
+-   **Nguy hiểm:** Upload toàn bộ Desktop/Document lên mạng.
+-   **Giải pháp:**
+    -   **DỪNG NGAY** (`Ctrl+C`).
+    -   Dùng lệnh `cd "Đường/Dẫn/Tới/Folder/Dự/Án"` trước khi chạy deploy.
+    -   Kiểm tra kỹ terminal đang đứng ở đâu (`Get-Location`).
+
+### 🔴 Lỗi 16: GAS không link với Google Sheet (Data không đổ về)
+-   **Triệu chứng:** Web chạy ngon, báo thành công, nhưng Sheet `LMS` trống trơn.
+-   **Nguyên nhân:** Script tạo mới là "Standalone" (đứng độc lập), không biết Sheet nào để ghi.
+-   **Giải pháp:**
+    -   Khi tạo script, BẮT BUỘC dùng lệnh `--type sheets --parentId <SHEET_ID>`.
+    -   Trong code GAS: Dùng `SpreadsheetApp.openById('...')` thay vì `getActiveSpreadsheet()` để chắc chắn 100%.
+
+### 🔴 Lỗi 17: Font chữ tiếng Việt bị lỗi (Mojibake/Âu hóa)
+-   **Triệu chứng:** Chữ "Hệ Thống" hiển thị thành "Há»‡ Thá»‘ng".
+-   **Nguyên nhân:** File lưu sai bảng mã (Encoding). PowerShell redirect output mặc định là UTF-16 hoặc Windows-1252, làm hỏng UTF-8.
+-   **Giải pháp:**
+    -   Luôn đảm bảo file là **UTF-8** (hoặc UTF-8 with BOM).
+    -   Thêm `<meta charset="UTF-8">` ngay đầu file HTML.
+    -   Dùng Python script để fix encoding nếu lỡ bị lỗi hàng loạt.
+
+### 🔴 Lỗi 18: Giao diện (CSS) bị vỡ khi lên Production
+-   **Triệu chứng:** Local chạy đẹp, lên Vercel bị mất màu, vỡ khung.
+-   **Nguyên nhân:**
+    -   File `style.css` chưa được save/commit đủ.
+    -   Cache trình duyệt.
+    -   Case-sensitive (Tên file `Style.css` vs `style.css` khác nhau trên Linux/Vercel).
+-   **Giải pháp:**
+    -   Kiểm tra kỹ tên file (viết thường hết).
+    -   Chạy `git add .` và commit lại.
+    -   Dùng tab ẩn danh (Incognito) để test.
+
+### 🔴 Lỗi 19: Ảnh không hiển thị trên Vercel (404 Not Found)
+-   **Triệu chứng:** Ảnh hiện tốt ở Local (Windows) nhưng lên web thì gãy (broken image).
+-   **Nguyên nhân:** Tên file chứa **Tiếng Việt có dấu** hoặc **Khoảng trắng** (VD: `Quản Lý.png`). Windows không phân biệt, nhưng server Vercel (Linux) thì có.
+-   **Giải pháp:**
+    -   **BẮT BUỘC:** Đặt tên file tiếng Anh, viết thường, gạch ngang (kebab-case).
+    -   Ví dụ: `admin-dashboard.png` (Thay vì `Admin Dashboard.png`).

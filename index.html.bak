@@ -1,0 +1,979 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS Ultimate System - Google Sheet Automation</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Styles -->
+    <style>
+        /* --- CORE VARIABLES (Premium Dark Mode) --- */
+        :root {
+            --bg-dark: #050507;
+            --card-bg: #121216;
+            --border: #1F1F23;
+            --text-main: #FFFFFF;
+            --text-sub: #A1A1AA;
+            --accent: #DC2626;
+            /* User Brand Color */
+            --accent-glow: rgba(220, 38, 38, 0.25);
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* --- UTILITIES --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .text-gradient {
+            background: linear-gradient(90deg, #fff, #999);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .text-accent {
+            color: var(--accent);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .section-sub {
+            text-align: center;
+            color: var(--text-sub);
+            max-width: 600px;
+            margin: 0 auto 48px auto;
+            font-size: 1.1rem;
+        }
+
+        /* --- COMPONENTS --- */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            border: 1px solid var(--accent);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .premium-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .premium-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 100;
+            background: rgba(5, 5, 7, 0.8);
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .logo {
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logo span {
+            color: var(--accent);
+        }
+
+        /* --- HERO --- */
+        .hero {
+            padding: 160px 0 100px 0;
+            text-align: center;
+            background: radial-gradient(circle at 50% 0%, rgba(220, 38, 38, 0.15), transparent 70%);
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            font-weight: 800;
+            margin-bottom: 24px;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-sub);
+            max-width: 700px;
+            margin: 0 auto 40px auto;
+        }
+
+        /* --- FEATURES (GRID) --- */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            padding-bottom: 100px;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* --- PRICING --- */
+        .pricing-section {
+            padding: 100px 0;
+            background: linear-gradient(180deg, transparent, rgba(5, 5, 7, 0.5), transparent);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .price-tag {
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            margin: 16px 0 8px 0;
+        }
+
+        .price-old {
+            text-decoration: line-through;
+            color: var(--text-sub);
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            background: var(--accent-glow);
+            color: var(--accent);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+        }
+
+        .check-list {
+            list-style: none;
+            padding: 0;
+            margin: 24px 0;
+            text-align: left;
+        }
+
+        .check-list li {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            color: var(--text-sub);
+        }
+
+        .check-list li svg {
+            color: var(--success);
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 60px 0;
+            text-align: center;
+            color: var(--text-sub);
+            margin-top: 60px;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .price-tag {
+                font-size: 2.5rem;
+            }
+        }
+
+        /* --- TABS SYSTEM --- */
+        .tabs-nav {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+            padding: 10px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- GALLERY IMAGE CARDS --- */
+        .gallery-card {
+            background: #18181b;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .gallery-img-wrapper {
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        .gallery-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .gallery-info {
+            padding: 16px;
+        }
+
+        .gallery-title {
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            text-align: center;
+        }
+
+        /* --- LIGHTBOX --- */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox.active .lightbox-content {
+            transform: scale(1);
+        }
+
+        .lightbox-img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            display: block;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.2s;
+        }
+
+        .close-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .gallery-desc {
+            color: var(--text-sub);
+            font-size: 13px;
+            text-align: center;
+            margin-top: 8px;
+            padding: 0 16px;
+            line-height: 1.5;
+        }
+
+        .gallery-card {
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">
+                <i data-lucide="zap" style="color:var(--accent)"></i>
+                <span>LMS Ultimate</span>
+            </div>
+            <a href="#pricing" class="btn btn-primary">Mua ngay</a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="badge" style="display:inline-block; margin-bottom:24px">New Update v2.3</div>
+            <h1>Sá»Ÿ Há»¯u Há»‡ Thá»‘ng LMS <br><span class="text-gradient">Tá»± Äá»™ng HÃ³a HoÃ n Chá»‰nh</span></h1>
+            <p>Biáº¿n Google Sheet thÃ nh há»‡ thá»‘ng quáº£n lÃ½ há»c viÃªn chuyÃªn nghiá»‡p. Email Marketing tá»±
+                Ä‘á»™ng, phÃ¢n quyá»n khÃ³a
+                há»c vÃ  báº£o máº­t video - KhÃ´ng tá»‘n phÃ­ duy trÃ¬ server.</p>
+            <div style="display:flex; gap:16px; justify-content:center">
+                <a href="#pricing" class="btn btn-primary">SÄƒn Æ¯u ÄÃ£i Táº¿t <i data-lucide="arrow-right"
+                        style="width:18px"></i></a>
+                <a href="#features" class="btn btn-glass">Xem Demo</a>
+            </div>
+
+            <!-- Dashboard Image Placeholder -->
+            <div
+                style="margin-top:60px; border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:0 0 100px rgba(220,38,38,0.1)">
+                <img src="GiÃ¡o ViÃªn - Admin/Thá»‘ng kÃª tá»•ng quan há»‡ thá»‘ng.png" alt="Dashboard"
+                    style="width:100%; display:block">
+            </div>
+        </div>
+    </section>
+
+    <!-- System Showcase Section (Features) -->
+    <section id="features" class="container" style="padding-top:80px; padding-bottom:100px">
+        <h2 class="section-title">KhÃ¡m PhÃ¡ <span class="text-accent">Há»‡ Thá»‘ng LMS</span></h2>
+        <p class="section-sub">Tráº£i nghiá»‡m thá»±c táº¿ qua hÃ¬nh áº£nh giao diá»‡n há»‡ thá»‘ng. Báº¥m vÃ o áº£nh
+            Ä‘á»ƒ xem chi tiáº¿t.</p>
+
+        <!-- Tabs Navigation -->
+        <div class="tabs-nav">
+            <button class="tab-btn active" onclick="openTab(event, 'student')">Há»c ViÃªn</button>
+            <button class="tab-btn" onclick="openTab(event, 'admin')">Quáº£n LÃ½ & Admin</button>
+            <button class="tab-btn" onclick="openTab(event, 'report')">BÃ¡o CÃ¡o</button>
+            <button class="tab-btn" onclick="openTab(event, 'marketing')">Marketing</button>
+        </div>
+
+        <!-- Tab 1: Student -->
+        <div id="student" class="tab-content active">
+            <div class="gallery-card"
+                onclick="openLightbox('assets/student/student-homepage.png', 'Homepage Há»c ViÃªn')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/student/student-homepage.png" alt="Homepage Há»c ViÃªn">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Homepage Há»c ViÃªn</h4>
+                    <p class="gallery-desc">Dashboard cÃ¡ nhÃ¢n hÃ³a. Hiá»ƒn thá»‹ % tiáº¿n Ä‘á»™ khÃ³a há»c, bÃ i
+                        há»c Ä‘ang xem dá»Ÿ vÃ 
+                        danh sÃ¡ch khÃ³a há»c sá»Ÿ há»¯u. Thiáº¿t káº¿ tá»‘i Æ°u cho tráº£i nghiá»‡m há»c táº­p táº­p
+                        trung.</p>
+                </div>
+            </div>
+            <div class="gallery-card"
+                onclick="openLightbox('assets/student/lesson-view.png', 'Giao diá»‡n Há»c Táº­p')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/student/lesson-view.png" alt="Giao diá»‡n Há»c">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Giao diá»‡n Há»c Táº­p & Video</h4>
+                    <p class="gallery-desc">TrÃ¬nh phÃ¡t Video Private Ä‘á»™c quyá»n. Chá»‘ng download (IDM), Watermark
+                        email
+                        Ä‘á»™ng cháº·n quay mÃ n hÃ¬nh. Sidebar bÃ i há»c vÃ  tÃ i liá»‡u Ä‘i kÃ¨m tiá»‡n lá»£i.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Admin -->
+        <div id="admin" class="tab-content">
+            <div class="gallery-card"
+                onclick="openLightbox('assets/admin/dashboard-overview.png', 'Dashboard Overview')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/dashboard-overview.png" alt="Dashboard Overview">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Dashboard Tá»•ng Quan</h4>
+                    <p class="gallery-desc">Trung tÃ¢m Ä‘iá»u khiá»ƒn. Biá»ƒu Ä‘á»“ trá»±c quan theo dÃµi Doanh thu,
+                        Há»c viÃªn má»›i vÃ 
+                        Hiá»‡u quáº£ Email Marketing theo thá»i gian thá»±c (Real-time).</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/course-management.png', 'Course Management')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/course-management.png" alt="Course Management">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Quáº£n LÃ½ KhÃ³a Há»c</h4>
+                    <p class="gallery-desc">Quáº£n lÃ½ kho ná»™i dung. TÃ¹y chá»‰nh tráº¡ng thÃ¡i, sáº¯p xáº¿p thá»©
+                        tá»± vÃ  cáº­p nháº­t thÃ´ng
+                        tin khÃ³a há»c nhanh chÃ³ng.</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/add-course.png', 'Add Course')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/add-course.png" alt="Add Course">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">ThÃªm KhÃ³a Há»c Nhanh</h4>
+                    <p class="gallery-desc">Form nháº­p liá»‡u thÃ´ng minh. Tá»± Ä‘á»™ng Ä‘á»“ng bá»™ video tá»« Drive,
+                        upload thumbnail
+                        vÃ  tÃ i liá»‡u khÃ´ng cáº§n code.</p>
+                </div>
+            </div>
+            <div class="gallery-card"
+                onclick="openLightbox('assets/admin/student-management.png', 'Student Management')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/student-management.png" alt="Student Management">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Quáº£n LÃ½ Há»c ViÃªn</h4>
+                    <p class="gallery-desc">Kiá»ƒm soÃ¡t truy cáº­p cháº·t cháº½. Theo dÃµi háº¡n sá»­ dá»¥ng, lá»‹ch
+                        sá»­ login vÃ  cáº¥p
+                        quyá»n tá»± Ä‘á»™ng/thá»§ cÃ´ng.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Reports -->
+        <div id="report" class="tab-content">
+            <div class="gallery-card" onclick="openLightbox('assets/admin/student-report.png', 'Student Report')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/student-report.png" alt="Student Report">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">BÃ¡o CÃ¡o Há»c ViÃªn</h4>
+                    <p class="gallery-desc">Há»“ sÆ¡ chi tiáº¿t tá»«ng ngÆ°á»i. Xem chÃ­nh xÃ¡c tiáº¿n Ä‘á»™ há»c,
+                        login tá»« IP nÃ o Ä‘á»ƒ
+                        phÃ¡t hiá»‡n gian láº­n share tÃ i khoáº£n.</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/course-report.png', 'Course Report')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/course-report.png" alt="Course Report">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">BÃ¡o CÃ¡o KhÃ³a Há»c</h4>
+                    <p class="gallery-desc">PhÃ¢n tÃ­ch ná»™i dung. Biáº¿t Ä‘Æ°á»£c khÃ³a há»c nÃ o 'hot', tá»· lá»‡
+                        hoÃ n thÃ nh trung
+                        bÃ¬nh Ä‘á»ƒ tá»‘i Æ°u chÆ°Æ¡ng trÃ¬nh.</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/lesson-report.png', 'Lesson Report')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/lesson-report.png" alt="Lesson Report">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">BÃ¡o CÃ¡o BÃ i Há»c</h4>
+                    <p class="gallery-desc">Thá»‘ng kÃª lÆ°á»£t xem tá»«ng video. PhÃ¡t hiá»‡n bÃ i há»c nÃ o khiáº¿n
+                        há»c viÃªn há»©ng thÃº
+                        hoáº·c chÃ¡n náº£n.</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/lesson-detail-report.png', 'Detail Report')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/lesson-detail-report.png" alt="Detail Report">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Chi Tiáº¿t BÃ i Há»c</h4>
+                    <p class="gallery-desc">Dá»¯ liá»‡u chiá»u sÃ¢u. Drill-down vÃ o tá»«ng tÆ°Æ¡ng tÃ¡c nhá» nháº¥t
+                        cá»§a há»c viÃªn vá»›i
+                        bÃ i giáº£ng.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Marketing -->
+        <div id="marketing" class="tab-content">
+            <div class="gallery-card" onclick="openLightbox('assets/admin/email-marketing.png', 'Email Marketing')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/email-marketing.png" alt="Email Marketing">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">Chiáº¿n Dá»‹ch Email Marketing</h4>
+                    <p class="gallery-desc">Gá»­i email thÃ´ng minh. Tá»± Ä‘á»™ng nháº¯c há»c bÃ i, thÃ´ng bÃ¡o ná»™i
+                        dung má»›i hoáº·c
+                        Upsell theo ká»‹ch báº£n cÃ³ sáºµn.</p>
+                </div>
+            </div>
+            <div class="gallery-card" onclick="openLightbox('assets/admin/email-report.png', 'Email Report')">
+                <div class="gallery-img-wrapper">
+                    <img src="assets/admin/email-report.png" alt="Email Report">
+                </div>
+                <div class="gallery-info">
+                    <h4 class="gallery-title">BÃ¡o CÃ¡o Email</h4>
+                    <p class="gallery-desc">Tracking minh báº¡ch. Äo lÆ°á»ng tá»· lá»‡ má»Ÿ (Open Rate), tá»· lá»‡
+                        Click ngay trÃªn
+                        giao diá»‡n.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing-section">
+        <div class="container">
+            <h2 class="section-title">ChÆ°Æ¡ng TrÃ¬nh <span class="text-accent">Æ¯u ÄÃ£i Táº¿t</span></h2>
+            <p class="section-sub">Sá»Ÿ há»¯u vÄ©nh viá»…n source code. KhÃ´ng phÃ­ thÃ¡ng. KhÃ´ng giá»›i háº¡n.</p>
+
+            <div class="pricing-grid">
+                <!-- Basic Plan -->
+                <div class="premium-card">
+                    <h3 style="color:var(--text-sub); font-size:14px; text-transform:uppercase">GÃ³i Source Code</h3>
+                    <div class="price-old">999.000Ä‘</div>
+                    <div class="price-tag">499K</div>
+                    <p style="color:var(--text-sub);font-size:13px; margin-bottom:24px">DÃ nh cho Developer hoáº·c
+                        ngÆ°á»i Ä‘Ã£
+                        biáº¿t Google Apps Script.</p>
+
+                    <a href="#" class="btn btn-glass" style="width:100%" onclick="openPaymentModal('basic')">Chá»n GÃ³i
+                        Basic</a>
+
+                    <ul class="check-list">
+                        <li><i data-lucide="check"></i> Full Source Code (Frontend + Backend)</li>
+                        <li><i data-lucide="check"></i> HÆ°á»›ng dáº«n cÃ i Ä‘áº·t cÆ¡ báº£n</li>
+                        <li><i data-lucide="check"></i> Sá»Ÿ há»¯u vÄ©nh viá»…n</li>
+                    </ul>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="premium-card"
+                    style="border-color:var(--accent); background: linear-gradient(180deg, rgba(220,38,38,0.05), var(--card-bg))">
+                    <div style="display:flex; justify-content:space-between; align-items:center">
+                        <h3 style="color:var(--accent); font-size:14px; text-transform:uppercase; font-weight:700">Full
+                            Combo VIP</h3>
+                        <div class="badge">Best Seller</div>
+                    </div>
+
+                    <div class="price-old">3.000.000Ä‘</div>
+                    <div class="price-tag text-accent">699K</div>
+                    <p style="color:var(--text-sub);font-size:13px; margin-bottom:24px">Giáº£i phÃ¡p trá»n gÃ³i + Há»—
+                        trá»£ táº­n
+                        rÄƒng.</p>
+
+                    <a href="#" class="btn btn-primary" style="width:100%" onclick="openPaymentModal('vip')">Mua
+                        Ngay</a>
+
+                    <ul class="check-list">
+                        <li><i data-lucide="check" style="color:var(--accent)"></i> <strong>Má»i quyá»n lá»£i gÃ³i
+                                Basic</strong></li>
+                        <li><i data-lucide="check" style="color:var(--accent)"></i> KhÃ³a há»c Build App vá»›i GAS
+                            (Trá»‹ giÃ¡
+                            2tr)</li>
+                        <li><i data-lucide="check" style="color:var(--accent)"></i> NhÃ³m Support riÃªng trá»n Ä‘á»i
+                        </li>
+                        <li><i data-lucide="check" style="color:var(--accent)"></i> Cam káº¿t Update tÃ­nh nÄƒng má»›i
+                        </li>
+                        <li><i data-lucide="check" style="color:var(--accent)"></i> Há»— trá»£ setup 1-1</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 LMS Ultimate System. All rights reserved.</p>
+            <p style="font-size:12px; opacity:0.6">Built with Google Apps Script & Premium Love.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching logic
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "grid";
+            setTimeout(() => {
+                document.getElementById(tabName).classList.add("active");
+            }, 10); // Small delay for fade-in animation
+            evt.currentTarget.className += " active";
+        }
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // Lightbox Logic
+        function openLightbox(imgSrc, imgAlt) {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+
+            lightboxImg.src = imgSrc;
+            lightboxImg.alt = imgAlt;
+
+            lightbox.style.display = 'flex';
+            setTimeout(() => {
+                lightbox.classList.add('active');
+            }, 10);
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            setTimeout(() => {
+                lightbox.style.display = 'none';
+            }, 300);
+        }
+
+        // Close when clicking outside image
+        document.getElementById('lightbox').addEventListener('click', function (e) {
+            if (e.target === this) {
+                closeLightbox();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', function (e) {
+            if (e.key === "Escape") {
+                closeLightbox();
+            }
+        });
+    </script>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="lightbox">
+        <div class="lightbox-content">
+            <span class="close-btn" onclick="closeLightbox()">&times;</span>
+            <img id="lightbox-img" class="lightbox-img" src="" alt="Full Preview">
+        </div>
+    </div>
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="lightbox">
+        <div class="lightbox-content"
+            style="background: var(--card-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 480px; border: 1px solid var(--border);">
+            <span class="close-btn" onclick="closePaymentModal()"
+                style="top: 10px; right: 15px; font-size: 24px;">&times;</span>
+
+            <!-- Step 1: Info Form -->
+            <div id="step-1">
+                <h3 class="section-title" style="font-size: 24px; margin-bottom: 20px;">ThÃ´ng Tin Thanh ToÃ¡n</h3>
+                <div
+                    style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                    <span style="color: var(--text-sub); font-size: 13px;">GÃ³i Ä‘ang chá»n:</span><br>
+                    <strong id="pkg-name-display" style="color: var(--accent); font-size: 16px;"></strong>
+                </div>
+
+                <form id="payment-form" onsubmit="submitOrder(event)">
+                    <input type="hidden" name="action" value="create_order">
+                    <input type="hidden" id="pkg-input" name="package" value="">
+
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: var(--text-sub); margin-bottom: 8px; font-size: 14px;">Há»
+                            tÃªn</label>
+                        <input type="text" name="name" required
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                    </div>
+
+                    <div style="margin-bottom: 16px;">
+                        <label
+                            style="display: block; color: var(--text-sub); margin-bottom: 8px; font-size: 14px;">Email
+                            nháº­n code</label>
+                        <input type="email" name="email" required
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                    </div>
+
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: var(--text-sub); margin-bottom: 8px; font-size: 14px;">Sá»‘
+                            Ä‘iá»‡n thoáº¡i</label>
+                        <input type="tel" name="phone" required
+                            style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                    </div>
+
+                    <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%;">Tiáº¿p tá»¥c
+                        thanh
+                        toÃ¡n</button>
+                    <p style="color: var(--text-sub); font-size: 12px; text-align: center; margin-top: 12px;">ThÃ´ng tin
+                        cá»§a báº¡n Ä‘Æ°á»£c báº£o máº­t tuyá»‡t Ä‘á»‘i.</p>
+                </form>
+            </div>
+
+            <!-- Step 2: QR Code Scan -->
+            <div id="step-2" style="display: none; text-align: center;">
+                <h3 class="section-title" style="font-size: 24px; margin-bottom: 10px;">QuÃ©t MÃ£ QR</h3>
+                <p style="color: var(--text-sub); font-size: 14px; margin-bottom: 20px;">Má»Ÿ App ngÃ¢n hÃ ng Ä‘á»ƒ
+                    quÃ©t mÃ£
+                    thanh toÃ¡n</p>
+
+                <div
+                    style="background: white; padding: 16px; border-radius: 12px; display: inline-block; margin-bottom: 20px;">
+                    <img id="qr-img" src="" alt="QR Code" style="width: 200px; display: block;">
+                </div>
+
+                <div style="text-align: left; background: rgba(255,255,255,0.05); padding: 16px; border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <span style="color: var(--text-sub);">Sá»‘ tiá»n:</span>
+                        <strong id="trans-amount" style="color: var(--accent); font-size: 18px;"></strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-sub);">Ná»™i dung CK:</span>
+                        <strong id="trans-code" style="color: white; letter-spacing: 1px;"></strong>
+                    </div>
+                </div>
+
+                <p style="margin-top: 20px; color: var(--success); font-size: 14px;">
+                    <i data-lucide="check-circle" style="width: 16px; vertical-align: middle;"></i>
+                    Há»‡ thá»‘ng sáº½ tá»± Ä‘á»™ng kÃ­ch hoáº¡t sau 1-3 phÃºt.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- PAYMENT MODAL LOGIC ---
+
+        // ⚠️ QUAN TRỌNG: Thay URL bên dưới bằng Link Web App của bạn sau khi deploy code1.gs
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycby4R8jY57mCOPLm-i1oVvENHEJwoIUwgyHcQYm1afRtrDx3XwfooB5Hh5BTMhh8OHUgLQ/exec";
+
+        function openPaymentModal(packageType) {
+            const modal = document.getElementById('payment-modal');
+            const pkgInput = document.getElementById('pkg-input');
+            const pkgName = document.getElementById('pkg-name-display');
+
+            // Set giÃ¡ trá»‹ gÃ³i
+            pkgInput.value = packageType;
+            if (packageType === 'basic') {
+                pkgName.innerText = 'GÃ³i Source Code (499K)';
+            } else {
+                pkgName.innerText = 'Full Combo VIP (699K)';
+            }
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('payment-modal');
+            modal.classList.remove('active');
+            setTimeout(() => modal.style.display = 'none', 300);
+
+            // Reset form steps
+            document.getElementById('step-1').style.display = 'block';
+            document.getElementById('step-2').style.display = 'none';
+        }
+
+        function submitOrder(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Äang xá»­ lÃ½...';
+            lucide.createIcons();
+            btn.disabled = true;
+
+            const formData = new FormData(document.getElementById('payment-form'));
+
+            // Fake API Call logic (VÃ¬ chÆ°a cÃ³ Link Deploy tháº­t)
+            // Khi deploy, báº¡n dÃ¹ng fetch() tháº­t bÃªn dÆ°á»›i
+
+            /* 
+            fetch(GAS_API_URL + "?action=create_order", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => { ... })
+            */
+
+            // SIMULATION (Giáº£ láº­p Ä‘á»ƒ test giao diá»‡n)
+            setTimeout(() => {
+                // Giáº£ láº­p dá»¯ liá»‡u tráº£ vá» tá»« code1.gs
+                const fakeData = {
+                    success: true,
+                    amount: formData.get('package') === 'basic' ? 499000 : 699000,
+                    transactionCode: 'LMS' + Math.floor(Math.random() * 1000000),
+                    qrUrl: `https://img.vietqr.io/image/TPB-0362675331-compact.png?amount=${formData.get('package') === 'basic' ? 499000 : 699000}&addInfo=TEST_TRANS_CODE`
+                };
+
+                showQrCode(fakeData);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 1500);
+        }
+
+        function showQrCode(data) {
+            document.getElementById('step-1').style.display = 'none';
+            document.getElementById('step-2').style.display = 'block';
+
+            document.getElementById('qr-img').src = data.qrUrl;
+            document.getElementById('trans-code').innerText = data.transactionCode;
+            document.getElementById('trans-amount').innerText = new Intl.NumberFormat('vi-VN').format(data.amount) + 'Ä‘';
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('payment-modal').addEventListener('click', function (e) {
+            if (e.target === this) closePaymentModal();
+        });
+
+        // Close on Escape key (Integrated with Lightbox)
+        document.addEventListener('keydown', function (e) {
+            if (e.key === "Escape") {
+                closePaymentModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

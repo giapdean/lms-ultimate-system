@@ -14,6 +14,11 @@ const ZALO_GROUP_LINK = "https://zalo.me/g/uyaqhe591";
 // 2. API ROUTER
 // ==========================================
 
+function createJSONOutput(data) {
+  return ContentService.createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doGet(e) {
   if (e.parameter.action === 'check_status') {
     return createJSONOutput(checkPaymentStatus(e.parameter.code));
@@ -31,39 +36,57 @@ function doPost(e) {
   
   if (lock.tryLock(10000)) {
     try {
-      // WEBHOOK TỪ SEPAY
-      if (e.postData && e.postData.type === "application/json") {
-        var data = JSON.parse(e.postData.contents);
-        
-        if (data.transferType === 'in') {
-          var content = data.content || data.description || '';
-          var transactionCode = extractTransactionCode(content);
-          
-          if (transactionCode) {
-            updatePaymentStatus(transactionCode, 'paid', data.transactionDate, data.referenceCode);
-          }
+      var data = {};
+      
+      // 1. Phân tích dữ liệu gửi lên (Hỗ trợ cả JSON và Form)
+      if (e.postData && e.postData.contents) {
+        try {
+          data = JSON.parse(e.postData.contents);
+        } catch (err) {
+          // Nếu không phải JSON, thử dùng parameter
+          data = e.parameter; 
         }
-        return createJSONOutput({ success: true, message: 'Webhook processed' });
+      } else {
+        data = e.parameter;
+      }
+
+      // 2. XỬ LÝ WEBHOOK TỪ SEPAY
+      // (SePay gửi header type là application/json nên data đã được parse ở trên)
+      if (data.transferType === 'in' || (e.postData && e.postData.type === "application/json" && !data.action)) {
+         // Fallback lại logic cũ nếu data parse ở trên chưa chuẩn với SePay
+         if (!data.transferType && e.postData.contents) {
+            try { data = JSON.parse(e.postData.contents); } catch(ex){}
+         }
+
+         if (data.transferType === 'in') {
+            var content = data.content || data.description || '';
+            var transactionCode = extractTransactionCode(content);
+            
+            if (transactionCode) {
+              updatePaymentStatus(transactionCode, 'paid', data.transactionDate, data.referenceCode);
+            }
+            return createJSONOutput({ success: true, message: 'Webhook processed' });
+         }
       }
       
-      // REQUEST TỪ FRONT-END
-      var action = e.parameter.action;
+      // 3. XỬ LÝ REQUEST TỪ FRONT-END
+      var action = data.action || e.parameter.action;
       
       if (action === 'register' || action === 'create_order') {
-        return createJSONOutput(submitRegistration(e.parameter));
+        return createJSONOutput(submitRegistration(data));
       } 
       else if (action === 'check_status') {
-        return createJSONOutput(checkPaymentStatus(e.parameter.code));
+        return createJSONOutput(checkPaymentStatus(data.code || e.parameter.code));
       }
       else if (action === 'track_visit') {
-        logVisit(e.parameter);
+        logVisit(data);
         return createJSONOutput({ success: true });
       }
-
+      
       return createJSONOutput({ success: false, message: 'Unknown action' });
-
-    } catch (error) {
-      return createJSONOutput({ success: false, message: error.toString() });
+      
+    } catch (e) {
+      return createJSONOutput({ success: false, message: 'Error: ' + e.toString() });
     } finally {
       lock.releaseLock();
     }
@@ -78,7 +101,8 @@ function doPost(e) {
 
 function submitRegistration(params) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // KẾT NỐI VỚI SHEET CỤ THỂ (ID do User cung cấp)
+    var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
     var sheet = ss.getSheetByName('LMS') || ss.insertSheet('LMS');
     
     if (sheet.getLastRow() === 0) {
@@ -137,7 +161,8 @@ function submitRegistration(params) {
 }
 
 function updatePaymentStatus(code, status, time, bankId) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('LMS');
+  var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
+  var sheet = ss.getSheetByName('LMS');
   var data = sheet.getDataRange().getValues();
   
   for (var i = 1; i < data.length; i++) {
@@ -161,7 +186,8 @@ function updatePaymentStatus(code, status, time, bankId) {
 }
 
 function checkPaymentStatus(code) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('LMS');
+  var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
+  var sheet = ss.getSheetByName('LMS');
   var data = sheet.getDataRange().getValues();
   
   for (var i = 1; i < data.length; i++) {
@@ -178,7 +204,7 @@ function checkPaymentStatus(code) {
 
 function logVisit(params) {
   try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
     var sheet = ss.getSheetByName('Analytics_TruyenNghe') || ss.insertSheet('Analytics_TruyenNghe');
     
     if (sheet.getLastRow() === 0) {

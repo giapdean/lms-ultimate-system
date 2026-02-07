@@ -6,6 +6,18 @@ description: Tự động khởi tạo Repo Github, Deploy GAS và đẩy lên V
 
 Quy trình này sẽ tự động hóa việc đưa dự án từ máy tính lên Cloud: GitHub (lưu code), Google Apps Script (Backend), và Vercel (Frontend).
 
+## 0. Chuẩn bị Quan Trọng (BẮT BUỘC)
+Trước khi bắt đầu, bạn cần lấy **Script ID** của dự án Google Apps Script mà bạn muốn deploy code vào.
+
+**Cách lấy Script ID:**
+1. Mở dự án trên [script.google.com](https://script.google.com).
+2. Nhìn lên thanh địa chỉ (URL).
+3. Copy chuỗi ký tự nằm giữa `/d/` và `/edit`.
+   * Ví dụ: `https://script.google.com/d/`**`1ABC...XYZ`**`/edit` -> Copy `1ABC...XYZ`
+4. **Gửi cho Agent:** "Đây là Script ID của tôi: [PASTE ID VÀO ĐÂY]"
+
+---
+
 Lưu ý: Bạn cần đăng nhập trước các công cụ sau:
 - GitHub CLI: `gh auth login`
 - Vercel CLI: `npx vercel login`
@@ -32,16 +44,20 @@ gh repo create lms-ultimate-system --public --source=. --remote=origin --push
 ```
 
 ## 3. Deploy Backend (Google Apps Script)
-Tạo dự án GAS mới, đẩy code lên và triển khai Web App.
+Kết nối với Google Sheet của bạn và tạo API.
 
 ```powershell
+Write-Host "👉 Hãy nhập Google Sheet ID của bạn (Lấy từ URL, chuỗi ký tự dài ở giữa /d/ và /edit):"
+$SheetID = Read-Host "Paste Sheet ID here"
+
 cd deploy_gas
-# Tạo project GAS mới
-npx @google/clasp create --type webapp --title "LMS Backend API" --rootDir .
+# Tạo project GAS gắn liền với Sheet (Container-bound)
+cmd /c "npx @google/clasp create --type sheets --parentId $SheetID --title 'LMS Backend API' --rootDir ."
+
 # Đẩy code lên
-npx @google/clasp push -f
+cmd /c "npx @google/clasp push -f"
 # Triển khai version mới
-npx @google/clasp deploy --description "Auto Deploy V1"
+cmd /c "npx @google/clasp deploy --description 'Auto Deploy V1'"
 cd ..
 ```
 
@@ -59,10 +75,20 @@ git push origin main
 Kết nối với Vercel và đẩy code lên môi trường Production.
 
 ```powershell
+$CurrentPath = (Get-Location).Path
+Write-Host "--------------------------------------------------------"
+Write-Host "⚠️  NẾU CẦN ĐĂNG NHẬP THỦ CÔNG (Khi gặp lỗi credentials):"
+Write-Host "1. Mở Terminal mới (PowerShell)."
+Write-Host "2. Copy và chạy lệnh sau để vào đúng thư mục:"
+Write-Host "   cd '$CurrentPath'"
+Write-Host "3. Sau đó chạy đăng nhập:"
+Write-Host "   cmd /c 'npx vercel login'"
+Write-Host "--------------------------------------------------------"
+
 # Link dự án (Chọn Yes/Enter cho các câu hỏi default)
-npx vercel link
+cmd /c "npx vercel link --yes"
 # Deploy lên Production
-npx vercel --prod
+cmd /c "npx vercel --prod"
 ```
 
 ## 5. Tổng Kết Thông Tin Deploy

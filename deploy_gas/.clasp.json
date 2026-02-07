@@ -1,4 +1,17 @@
 {
-  "scriptId": "1oqUQPbYfcYfZKy5SgRllvYbHrsK4EokgYVWaaX0zAjWvpE5gek6HpsJG",
-  "rootDir": "c:\\Users\\HP\\Downloads\\File\\GG Sheet\\deploy_gas"
+  "scriptId": "1h1Lrm-qhURw1sH5MTEerhBk0haX1bkwRss4_1ATXG1QfgSWEhuTHBXxK",
+  "rootDir": "",
+  "parentId": "1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o",
+  "scriptExtensions": [
+    ".js",
+    ".gs"
+  ],
+  "htmlExtensions": [
+    ".html"
+  ],
+  "jsonExtensions": [
+    ".json"
+  ],
+  "filePushOrder": [],
+  "skipSubdirectories": false
 }
