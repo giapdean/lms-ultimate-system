@@ -20,31 +20,44 @@ function createJSONOutput(data) {
 }
 
 function doGet(e) {
+  // --- ROUTER: LICENSE SERVER ---
+  if (e.parameter.action === 'activate' || e.parameter.action === 'check' || (e.parameter.sheetId && e.parameter.key)) {
+    return handleLicenseRequest(e);
+  }
+
+  // --- ROUTER: MAIN SYSTEM ---
   if (e.parameter.action === 'check_status') {
     return createJSONOutput(checkPaymentStatus(e.parameter.code));
   }
-  
-  return createJSONOutput({ 
-    status: 'running', 
+
+  return createJSONOutput({
+    status: 'running',
     message: 'AI Automation Master API is active',
     timestamp: new Date()
   });
 }
 
 function doPost(e) {
+  // --- ROUTER: LICENSE SERVER ---
+  // Check parameter-based actions first to delegate to License Server
+  // Note: License Server code uses e.parameter, so we check that here.
+  if (e.parameter.action === 'activate' || e.parameter.action === 'check' || (e.parameter.sheetId && e.parameter.key)) {
+    return handleLicenseRequest(e);
+  }
+
   var lock = LockService.getScriptLock();
-  
+
   if (lock.tryLock(10000)) {
     try {
       var data = {};
-      
+
       // 1. Phân tích dữ liệu gửi lên (Hỗ trợ cả JSON và Form)
       if (e.postData && e.postData.contents) {
         try {
           data = JSON.parse(e.postData.contents);
         } catch (err) {
           // Nếu không phải JSON, thử dùng parameter
-          data = e.parameter; 
+          data = e.parameter;
         }
       } else {
         data = e.parameter;
@@ -53,28 +66,28 @@ function doPost(e) {
       // 2. XỬ LÝ WEBHOOK TỪ SEPAY
       // (SePay gửi header type là application/json nên data đã được parse ở trên)
       if (data.transferType === 'in' || (e.postData && e.postData.type === "application/json" && !data.action)) {
-         // Fallback lại logic cũ nếu data parse ở trên chưa chuẩn với SePay
-         if (!data.transferType && e.postData.contents) {
-            try { data = JSON.parse(e.postData.contents); } catch(ex){}
-         }
+        // Fallback lại logic cũ nếu data parse ở trên chưa chuẩn với SePay
+        if (!data.transferType && e.postData.contents) {
+          try { data = JSON.parse(e.postData.contents); } catch (ex) { }
+        }
 
-         if (data.transferType === 'in') {
-            var content = data.content || data.description || '';
-            var transactionCode = extractTransactionCode(content);
-            
-            if (transactionCode) {
-              updatePaymentStatus(transactionCode, 'paid', data.transactionDate, data.referenceCode);
-            }
-            return createJSONOutput({ success: true, message: 'Webhook processed' });
-         }
+        if (data.transferType === 'in') {
+          var content = data.content || data.description || '';
+          var transactionCode = extractTransactionCode(content);
+
+          if (transactionCode) {
+            updatePaymentStatus(transactionCode, 'paid', data.transactionDate, data.referenceCode);
+          }
+          return createJSONOutput({ success: true, message: 'Webhook processed' });
+        }
       }
-      
+
       // 3. XỬ LÝ REQUEST TỪ FRONT-END
       var action = data.action || e.parameter.action;
-      
+
       if (action === 'register' || action === 'create_order') {
         return createJSONOutput(submitRegistration(data));
-      } 
+      }
       else if (action === 'check_status') {
         return createJSONOutput(checkPaymentStatus(data.code || e.parameter.code));
       }
@@ -82,9 +95,9 @@ function doPost(e) {
         logVisit(data);
         return createJSONOutput({ success: true });
       }
-      
+
       return createJSONOutput({ success: false, message: 'Unknown action' });
-      
+
     } catch (e) {
       return createJSONOutput({ success: false, message: 'Error: ' + e.toString() });
     } finally {
@@ -104,20 +117,20 @@ function submitRegistration(params) {
     // KẾT NỐI VỚI SHEET CỤ THỂ (ID do User cung cấp)
     var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
     var sheet = ss.getSheetByName('LMS') || ss.insertSheet('LMS');
-    
+
     if (sheet.getLastRow() === 0) {
       sheet.appendRow([
-        'Timestamp', 'Email', 'Name', 'Phone', 'Package', 
-        'Message', 'TransactionCode', 'Amount', 'Status', 
+        'Timestamp', 'Email', 'Name', 'Phone', 'Package',
+        'Message', 'TransactionCode', 'Amount', 'Status',
         'PaymentTime', 'BankTransactionID'
       ]);
     }
-    
+
     var transactionCode = generateTransactionCode();
-    
+
     var pkg = params.package;
     var amount = 0;
-    
+
     if (pkg === 'marketer') {
       amount = 30000000;
     } else if (pkg === 'business') {
@@ -129,7 +142,7 @@ function submitRegistration(params) {
     } else if (pkg === 'vip') {
       amount = 699000;
     }
-    
+
     sheet.appendRow([
       new Date(),
       params.email,
@@ -143,13 +156,13 @@ function submitRegistration(params) {
       '',
       ''
     ]);
-    
+
     var qrUrl = `https://img.vietqr.io/image/${SEPAY_CONFIG.bankCode}-${SEPAY_CONFIG.accountNumber}-compact.png?amount=${amount}&addInfo=${transactionCode}&accountName=${encodeURIComponent(SEPAY_CONFIG.accountName)}`;
-    
-    return { 
-      success: true, 
-      transactionCode: transactionCode, 
-      amount: amount, 
+
+    return {
+      success: true,
+      transactionCode: transactionCode,
+      amount: amount,
       qrUrl: qrUrl,
       accountNumber: SEPAY_CONFIG.accountNumber,
       accountName: SEPAY_CONFIG.accountName,
@@ -164,20 +177,37 @@ function updatePaymentStatus(code, status, time, bankId) {
   var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
   var sheet = ss.getSheetByName('LMS');
   var data = sheet.getDataRange().getValues();
-  
+
   for (var i = 1; i < data.length; i++) {
     if (data[i][6] == code) {
       sheet.getRange(i + 1, 9).setValue(status);
       sheet.getRange(i + 1, 10).setValue(time || new Date());
       sheet.getRange(i + 1, 11).setValue(bankId || '');
-      
+
       if (status === 'paid') {
+        Logger.log('💰 Payment Confirmed: ' + code);
         var email = data[i][1];
         var name = data[i][2];
         var phone = data[i][3];
         var packageType = data[i][4];
         var amount = data[i][7];
-        
+
+        // --- 1. SYNC VIP TO LMS SHEET ---
+        if (packageType === 'vip') {
+          Logger.log('🔄 Syncing VIP User: ' + email);
+          syncToLMSActionSheet(email, name, phone);
+        } else {
+          Logger.log('ℹ️ Skipping Sync (Not VIP): ' + packageType);
+        }
+
+        // --- 2. CREATE LICENSE ---
+        if (typeof createLicense === 'function') {
+          Logger.log('🔑 Creating License for: ' + code);
+          createLicense(code, name, email);
+        } else {
+          Logger.log('❌ createLicense function not found');
+        }
+
         sendSuccessEmail(email, name, phone, packageType, code, amount);
       }
       break;
@@ -189,13 +219,13 @@ function checkPaymentStatus(code) {
   var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
   var sheet = ss.getSheetByName('LMS');
   var data = sheet.getDataRange().getValues();
-  
+
   for (var i = 1; i < data.length; i++) {
     if (data[i][6] === code) {
-      return { 
-        success: true, 
+      return {
+        success: true,
         status: data[i][8],
-        name: data[i][2] 
+        name: data[i][2]
       };
     }
   }
@@ -206,7 +236,7 @@ function logVisit(params) {
   try {
     var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
     var sheet = ss.getSheetByName('Analytics_TruyenNghe') || ss.insertSheet('Analytics_TruyenNghe');
-    
+
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(['Timestamp', 'Referrer', 'User Agent', 'Screen Size', 'Page URL']);
     }
@@ -218,8 +248,28 @@ function logVisit(params) {
       params.screenSize,
       params.pageUrl
     ]);
-  } catch(e) {
+  } catch (e) {
     Logger.log("Tracking Error: " + e.toString());
+  }
+}
+
+function syncToLMSActionSheet(email, name, phone) {
+  try {
+    var ss = SpreadsheetApp.openById('1UIUtcqiJGC6atMNarjaJRW3570bc5B52n01M3vCChzI');
+    var sheet = ss.getSheetByName('Users');
+
+    sheet.appendRow([
+      email,
+      name,
+      "'" + phone,
+      '123456',
+      'Approve',
+      new Date(),
+      'K1'
+    ]);
+    Logger.log('✅ Synced to LMS Users Sheet');
+  } catch (e) {
+    Logger.log("❌ Sync Error: " + e.toString());
   }
 }
 
@@ -249,12 +299,26 @@ function createJSONOutput(data) {
 function sendSuccessEmail(email, name, phone, packageType, code, amount) {
   try {
     var formattedAmount = new Intl.NumberFormat('vi-VN').format(amount);
-    
+
+    // CHỈ GỬI EMAIL CHO GÓI VIP VÀ BASIC (STANDARD)
+    if (packageType !== 'vip' && packageType !== 'basic') {
+      Logger.log("🚫 Skipping email for package: " + packageType);
+      return;
+    }
+
     var packageName = '';
-    if (packageType === 'marketer') packageName = 'Gói Marketer (3 tháng)';
-    else if (packageType === 'business') packageName = 'Gói Business Master (6 tháng)';
-    else if (packageType === 'custom') packageName = 'Gói Customization';
-    
+    var zaloLink = '';
+
+    if (packageType === 'vip') {
+      packageName = 'Gói VIP';
+      zaloLink = 'https://zalo.me/g/qxwgcy337';
+    } else if (packageType === 'basic') {
+      packageName = 'Gói Basic'; // Đây là gói Standard
+      zaloLink = 'https://zalo.me/g/kblngi404';
+    }
+
+
+
     var htmlBody = `
       <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #7c3aed 0%, #DC2626 100%); padding: 35px 20px; text-align: center; color: white;">
@@ -287,10 +351,25 @@ function sendSuccessEmail(email, name, phone, packageType, code, amount) {
             </table>
           </div>
 
+          <!-- QUÀ TẶNG & THÔNG TIN KHOÁ HỌC -->
+          <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 20px; margin-bottom: 30px; border-radius: 4px;">
+            <h3 style="margin-top: 0; color: #c2410c; font-size: 18px;">🎁 QUÀ TẶNG KÈM THEO</h3>
+            <p style="font-weight: bold; margin-bottom: 5px;">Khóa học xây dựng webapp/ landingpage đơn giản và hiệu quả với Ai và Google App Script</p>
+            <ul style="list-style-type: none; padding: 0; margin: 10px 0; color: #431407;">
+               <li style="margin-bottom: 8px;">📧 Tài khoản: <strong>${email}</strong></li>
+               <li style="margin-bottom: 8px;">🔑 Mật khẩu: <strong>123456</strong></li>
+               <li style="margin-bottom: 8px;">🌐 Link học: <a href="https://edu.iaction.vn/" style="color: #ea580c; text-decoration: underline;">edu.iaction.vn</a></li>
+            </ul>
+            <hr style="border: 0; border-top: 1px dashed #fdba74; margin: 15px 0;">
+            <p style="font-weight: bold; margin-bottom: 5px;">📂 NHẬN HỆ THỐNG LMS:</p>
+            <p style="margin: 0;"><a href="https://docs.google.com/spreadsheets/d/1jsI-NlZrI95ybAlA4axBap04XXOns0DC21r9Hp2fLvM/edit?gid=0#gid=0" style="color: #0369a1; text-decoration: underline; word-break: break-all;">Link Google Sheet Gốc</a></p>
+            <p style="margin-top: 10px; font-style: italic; color: #666;">📹 Hướng dẫn kích hoạt: <a href="https://drive.google.com/drive/folders/17GsWMc40G77p2XSS3G-XXeHivV7rrEKu?usp=sharing" target="_blank" style="color: #0369a1; text-decoration: underline;">Xem Video Hướng Dẫn</a></p>
+          </div>
+
           <div style="text-align: center; margin-top: 35px;">
             <p style="margin-bottom: 20px; font-weight: 700; color: #7c3aed;">👇 BƯỚC TIẾP THEO QUAN TRỌNG 👇</p>
             
-            <a href="${ZALO_GROUP_LINK}" style="display: inline-block; background: #0068FF; color: white; padding: 16px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0, 104, 255, 0.3);">
+            <a href="${zaloLink}" style="display: inline-block; background: #0068FF; color: white; padding: 16px 32px; text-decoration: none; border-radius: 50px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0, 104, 255, 0.3);">
               THAM GIA NHÓM ZALO HỌC VIÊN
             </a>
           </div>
@@ -316,8 +395,8 @@ function sendSuccessEmail(email, name, phone, packageType, code, amount) {
       htmlBody: htmlBody,
       name: "AI Automation Master - iAction"
     });
-    
-  } catch(e) {
+
+  } catch (e) {
     Logger.log("Email Error: " + e.toString());
   }
 }
